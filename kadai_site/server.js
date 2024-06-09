@@ -111,7 +111,7 @@ Deno.serve(async (request) => {
             - enableCors: CORSの設定を付加するか
             */
             //fsRoot: "./public/",
-            fsRoot: "kadai_site/public/",
+            fsRoot: "kadai_site/public/index.html",
             urlRoot: "",
             enableCors: true,
         }
