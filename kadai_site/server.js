@@ -3,7 +3,10 @@
 import { serveDir } from "https://deno.land/std@0.223.0/http/file_server.ts";
 
 // 直前の単語を保持しておく
-let previousWord = "しりとり";
+let wordHistories = ["しりとり"];
+let turn = 0;
+let totalWordCount = wordHistories[wordHistories.length - 1].length;
+let score = turn*10+totalWordCount;
 
 // localhostにDenoのHTTPサーバーを展開
 Deno.serve(async (request) => {
@@ -14,7 +17,7 @@ Deno.serve(async (request) => {
 
     // GET /shiritori: 直前の単語を返す
     if (request.method === "GET" && pathname === "/shiritori") {
-        return new Response(previousWord);
+        return new Response(wordHistories[wordHistories.length - 1]);
     }
     // POST /shiritori: 次の単語を入力する
     if (request.method === "POST" && pathname === "/shiritori") {
@@ -24,9 +27,51 @@ Deno.serve(async (request) => {
         const nextWord = requestJson["nextWord"];
  
         // previousWordの末尾とnextWordの先頭が同一か確認
-        if (previousWord.slice(-1) === nextWord.slice(0, 1)) {
+        if (wordHistories[wordHistories.length - 1].slice(-1) === nextWord.slice(0, 1)) {
+            // 末尾が「ん」になっている場合
+            // ifの中に入力された単語の末尾が「ん」になっていることを確認する条件式を追加
+            if (nextWord.slice(-1)=="ん") {
+                // エラーを返す処理を追加
+                // errorCodeを固有のものにして、末尾が「ん」の時に発生したエラーだとWeb側に通知できるようにする
+                return new Response(
+                    JSON.stringify({
+                        "errorMessage": "単語の最後が\"ん\"だったので終了します。",
+                        "errorCode": "10002",
+                        "wordData":wordHistories.pop(nextWord),
+                        "turn":turn,
+                        "totalWordCount":totalWordCount,
+                        "score":score,
+                    }),
+                    {
+                        status: 400,
+                        headers: { "Content-Type": "application/json; charset=utf-8" },
+                    }
+                );
+            }
+            const includes = wordHistories.includes(nextWord);
+            if (includes == true) {
+                // エラーを返す処理を追加
+                // errorCodeを固有のものにして、末尾が「ん」の時に発生したエラーだとWeb側に通知できるようにする
+                return new Response(
+                    JSON.stringify({
+                        "errorMessage": "同じ単語を再使用したため終了します。",
+                        "errorCode": "10003",
+                        "wordData":wordHistories.pop(nextWord),
+                        "turn":turn,
+                        "totalWordCount":totalWordCount,
+                        "score":score,
+                    }),
+                    {
+                        status: 400,
+                        headers: { "Content-Type": "application/json; charset=utf-8" },
+                    }
+                );
+            }
             // 同一であれば、previousWordを更新
-            previousWord = nextWord;
+            wordHistories.push(nextWord);
+            turn=turn+1;
+            totalWordCount =totalWordCount+wordHistories[wordHistories.length - 1].length;
+            score = turn*10+totalWordCount;
         }
         // 同一でない単語の入力時に、エラーを返す
         else {
@@ -42,9 +87,20 @@ Deno.serve(async (request) => {
                 );
             }
         // 現在の単語を返す
-        return new Response(previousWord);
+        return new Response(wordHistories[wordHistories.length - 1]);
     } 
 
+    // POST /reset: リセットする
+    // request.methodとpathnameを確認
+    if (request.method === "POST" && pathname === "/reset") {
+        // 既存の単語の履歴を初期化する
+        wordHistories=["しりとり"];
+        turn = 0;
+        totalWordCount = wordHistories[wordHistories.length - 1].length;
+        score = turn*10+totalWordCount;
+        return new Response(wordHistories);
+    }
+    
     // ./public以下のファイルを公開
     return serveDir(
         request,
@@ -54,7 +110,8 @@ Deno.serve(async (request) => {
             - urlRoot: フォルダを展開するURLを指定。今回はlocalhost:8000/に直に展開する
             - enableCors: CORSの設定を付加するか
             */
-            fsRoot: "kadai_site/public/",
+            fsRoot: "./public/",
+            //fsRoot: "kadai_site/public/",
             urlRoot: "",
             enableCors: true,
         }
