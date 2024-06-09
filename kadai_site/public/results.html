@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<!-- headタグの中にはメタデータ等を記載する -->
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<!-- bodyタグの中には実際に表示するものなどを書く -->
+<body>
+    <div id="results"></div>
+  <button id="resetSendButton">ニューゲーム</button>
+  <script>
+    document.querySelector("#resetSendButton").onclick = async(event) => {
+    const response = await fetch(
+        "/reset",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        }
+        );
+        location.href = 'index.html';
+    }
+    const errorJson = sessionStorage.getItem('resultdatas');
+    const resultsdatas = JSON.parse(errorJson);
+    console.log(resultsdatas);
+
+    const results=document.getElementById('results')
+    results.innerHTML = 
+        '<ul class="list">'+
+          '<li class="listItem">合計ターン数:'+resultsdatas.turn+'</li>'+
+          '<li class="listItem">合計文字数:'+resultsdatas.totalWordCount+'</li>'+
+          '<li class="listItem">スコア：'+resultsdatas.score+'</li>'+
+        '</ul>';
+  </script>
+</body>
+
+</html>
