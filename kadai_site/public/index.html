@@ -15,6 +15,7 @@
   <!-- 次の文字を入力するフォーム -->
   <input id="nextWordInput" type="text" />
   <button id="nextWordSendButton">送信</button>
+  <button id="resetSendButton">リセット</button>
   <!-- JavaScriptを実行 -->
   <script>
     window.onload = async (event) => {
@@ -44,11 +45,18 @@
       body: JSON.stringify({ nextWord: nextWordInputText })
       }
     );
+    
     // status: 200以外が返ってきた場合にエラーを表示
     if (response.status !== 200) {
       const errorJson = await response.text();
       const errorObj = JSON.parse(errorJson);
+
       alert(errorObj["errorMessage"]);
+      if(errorObj.errorCode==10002 || errorObj.errorCode==10003){
+        console.log(errorObj)
+        sessionStorage.setItem('resultdatas', errorJson);
+        location.href = 'results.html';
+      }
     }
  
     const previousWord = await response.text();
@@ -58,6 +66,17 @@
     paragraph.innerHTML = `前の単語: ${previousWord}`;
     // inputタグの中身を消去する
     nextWordInput.value = "";
+    }
+    // 送信ボタンの押下時に実行
+    document.querySelector("#resetSendButton").onclick = async(event) => {
+      const response = await fetch(
+      "/reset",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+      window.location.reload();
     }
   </script>
 </body>
