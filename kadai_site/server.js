@@ -25,6 +25,19 @@ Deno.serve(async (request) => {
         const requestJson = await request.json();
         // JSONの中からnextWordを取得
         const nextWord = requestJson["nextWord"];
+
+        if (/^[ぁ-んー]+$/.test(nextWord)==false) {
+            return new Response(
+                JSON.stringify({
+                    "errorMessage": "ひらがなのみで入力してください。",
+                    "errorCode": "10004",
+                }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json; charset=utf-8" },
+                }
+            );
+        }
  
         // previousWordの末尾とnextWordの先頭が同一か確認
         if (wordHistories[wordHistories.length - 1].slice(-1) === nextWord.slice(0, 1)) {
